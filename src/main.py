@@ -17,7 +17,8 @@ def login():
             if form.name == None:           # Since WIT doesn't name their forms...
                 br.form = list( br.forms() )[0]
                 
-                print 'Don\'t worry, these credentials are safe.' 
+                print 'Please login to continue.\n'
+                print 'Don\'t worry, these credentials are safe.'
                 
                 try:
                     username = raw_input( 'Enter username: ' )
@@ -28,13 +29,15 @@ def login():
                 except KeyboardInterrupt as e:
                     print '\nCanceled'
                     return False
+                finally:
+                    print 'Authenticating...'
                 
                 br['username'] = username
                 br['password'] = password
 
                 # Clear the password you entered
                 # I sure hope this isn't your actual password
-                password = 'cats'
+                password = None
                 
                 response = br.submit()
                 print ''
@@ -48,8 +51,48 @@ def login():
         print 'Looks like you entered something wrong.\n'
         login()
 
+def follow_link( link_text ):
+    response = None
+
+    for link in br.links():
+        if link.text == link_text:
+            response = br.follow_link( link )
+
+    return response
+
 def find_data():
-    pass
+    print 'Loading...'
+
+    follow_link( 'Student' ).geturl()
+    
+    follow_link( 'Registration' ).geturl()
+    
+    follow_link( 'Course Section Search' ).geturl()
+
+    br.form = list( br.forms() )[1]     # Save the controls
+    
+    select_control = None               # We want to save the control
+    
+    array = [' ']
+
+    count = 0
+    for control in br.form.controls:    # Enumerate controls in the form
+        if control.type == 'select':    # Is it a select control?
+            select_control = control
+            for item in control.items:  # Enumerate all the items
+                if count > 0:           # The first one is 'None,' so bypass it
+                    val = [label.text  for label in item.get_labels()][0]
+                    print '%d) %s' % (count, val )
+                    array.append( item.name )
+                count += 1              # Add to the counter
+    
+    selection = int( raw_input( 'Enter selection: ' ) )
+    
+    select_control.value = [array[selection]]
+
+    response = br.submit()
+
+    print response.read()
 
 # Let the fun begin!
 if __name__ == '__main__':
