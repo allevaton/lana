@@ -38,7 +38,6 @@ def login():
                 br['password'] = password
 
                 # Clear the password you entered
-                # I sure hope this isn't your actual password
                 password = None
                 
                 response = br.submit()
