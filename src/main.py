@@ -115,10 +115,9 @@ def find_data():
     
     # So now we're on the big page of classes.
     # Time to start parsing.
+    # use response.read() to get the HTML
 
-    br.form = list( br.forms() )[1]     # Get the second form, like usual
-    
-    xml = etree.fromstring( response.read() )
+    #br.form = list( br.forms() )[1]     # Get the second form, like usual
     
     # Get the big table. Since it's all in a tbody, like terrible HTML writers do,
     # we need to account for it.
