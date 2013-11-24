@@ -3,10 +3,12 @@
 #   Lana main source
 #
 
-import re, mechanize
+import re
+from mechanize import Browser
+from lxml import etree
 from getpass import getpass
 
-br = mechanize.Browser()
+br = Browser()
 #br.set_all_readonly( False )           # Everything is writable
 br.open( 'http://leopardweb.wit.edu/' ) # Open the page
 
@@ -89,13 +91,45 @@ def find_data():
     selection = int( raw_input( 'Enter selection: ' ) )
     
     select_control.value = [array[selection]]
-
+    response = br.submit()              # Submit the form
+    
+    # Course Section Search page
+    br.form = list( br.forms() )[1]     # Get the new page's form
+    
+    response = br.submit( name='SUB_BTN', label='Advanced Search' ) # Submit the form
+    array = []
+    
+    print response.geturl()
+    
+    # Advanced Search page
+    br.form = list( br.forms() )[1]     # Get the new page's form
+    
+    for control in br.form.controls:    # Enumerate controls
+        if control.type == 'select':    # Find the select form with all the classes
+            select_control = control
+            for item in control.items:  # Enumerate the items
+                array.append( item.name )
+            break
+    
+    select_control.value = array
     response = br.submit()
+    
+    # So now we're on the big page of classes.
+    # Time to start parsing.
 
-    print response.read()
+    br.form = list( br.forms() )[1]     # Get the second form, like usual
+    
+    xml = etree.fromstring( response.read() )
+    
+    # Get the big table. Since it's all in a tbody, like terrible HTML writers do,
+    # we need to account for it.
+    #data_table = xml.find( 'table', class_='datadisplaytable' ).find( 'tbody' )
+    
+    
 
 # Let the fun begin!
 if __name__ == '__main__':
     # Need to login first
     if login():
         find_data()
+
