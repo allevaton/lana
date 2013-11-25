@@ -5,12 +5,15 @@
 
 import re
 from mechanize import Browser
-from lxml import etree
 from getpass import getpass
+from bs4 import BeautifulSoup
+from Class import Class
 
 br = Browser()
-#br.set_all_readonly( False )           # Everything is writable
 br.open( 'http://leopardweb.wit.edu/' ) # Open the page
+
+time_regex = re.compile( r"([0-9]*:?[0-9]*)\s*(am|pm)\s*\-([0-9]*:?[0-9]*)\s*(am|pm)\s*" )
+date_regex = re.compile( r"([0-9]*)[/]([0-9]*)\-([0-9]*)[/]([0-9]*)" )
 
 def login():
     if br.title() == 'Sign In':             # Sign in page?
@@ -37,20 +40,19 @@ def login():
                 br['username'] = username
                 br['password'] = password
 
-                # Clear the password you entered
-                password = None
+                password = None         # Clear the password you entered
                 
                 response = br.submit()
                 print ''
                 
-    if br.title() == 'Main Menu':            # Looks like you're already logged in
+    if br.title() == 'Main Menu':       # Looks like you're already logged in
         # Good to go
         print 'Good to go! (successfully logged in)'
         return True
     elif br.title() == 'Sign In':
         # Looks like you entered something wrong. Do it again
         print 'Looks like you entered something wrong.\n'
-        login()
+        return login()
 
 def follow_link( link_text ):
     response = None
@@ -79,9 +81,11 @@ def find_data():
     count = 0
     for control in br.form.controls:    # Enumerate controls in the form
         if control.type == 'select':    # Is it a select control?
-            select_control = control
+            select_control = control    # Yes? Awesome.
             for item in control.items:  # Enumerate all the items
                 if count > 0:           # The first one is 'None,' so bypass it
+                    # Now get the labels and store the actual
+                    # data in the background somewhere
                     val = [label.text  for label in item.get_labels()][0]
                     print '%d) %s' % (count, val )
                     array.append( item.name )
@@ -113,21 +117,101 @@ def find_data():
     select_control.value = array
     response = br.submit()
     
+    del array
+
     # So now we're on the big page of classes.
-    # Time to start parsing.
     # use response.read() to get the HTML
 
-    #br.form = list( br.forms() )[1]     # Get the second form, like usual
+    soup = BeautifulSoup( response.read() )
+    classes = []                        # Create an array of classes
     
-    # Get the big table. Since it's all in a tbody, like terrible HTML writers do,
-    # we need to account for it.
-    #data_table = xml.find( 'table', class_='datadisplaytable' ).find( 'tbody' )
+    for tr in soup.find_all( 'tr' ):    # Get all the trs
+        c = Class()
+        temp = tr.contents              # Split it into the children
+        td = []
+        for i in temp:
+            if i != '\n':
+                td.append( i )
+
+        try:
+            if td[1]['class'][0] == 'dddefault':  # Great, found a row of data!
+                # Time to parse the data
+                # First column is CRN
+                crn = td[1].text
+                if crn == '':                       # Sometimes it's == ''
+                    break                           # So don't bother with them
+
+                c.crn = crn
+                
+                c.subject = td[2].text
+                c.course = td[3].text
+                c.section = td[4].text
+                c.campus = td[5].text
+                c.credits = float( td[6].text )
+                c.title = td[7].text
+                c.weekdays = list( td[8].text )
+                c.start_time = parse_time( td[9].text, True )
+                c.end_time = parse_time( td[9].text, False )
+                c.class_max = int( td[10].text )
+                c.class_cur = int( td[11].text )
+                # Skip 12. It's class remainder
+                c.instructor = td[13].text
+                c.start_date = parse_date( td[14].text, True )
+                c.end_date = parse_date( td[14].text, False )
+                c.location = td[15].text
+                
+                c.misc = td[16].text
+                
+                print c.subject
+                print c.course
+                print c.section
+                print c.campus
+                print c.credits
+                print c.title
+                print c.weekdays
+                print c.start_time
+                print c.end_time
+                print c.instructor
+                print c.start_date
+                print c.end_date
+                print c.location
+                print '---------------------------------------'
+            else:
+                continue
+
+        except Exception as e:          # Handle if it wasn't a tag
+            pass
+
+def parse_time( instr, is_start ):
+    m = time_regex.match( instr )       # Match the regex
     
-    
+    index = 1 if is_start else 3        # Used to simplify is_start idea
+
+    if m:                               # Found a match?
+        time = m.group( index )         # Get the time
+        time = time.replace( ':', '' )  # Remove that pesky colon
+        time = int( time )              # Convert it to an int
+
+        if m.group( index+1 ) == 'pm':  # Is this pm?
+            if time < 1200:
+                time += 1200            # Convert it to 24 hour time
+
+        return time
+    else:
+        return None
+
+def parse_date( instr, is_start ):
+    m = date_regex.match( instr )
+
+    index = 1 if is_start else 3
+
+    if m:
+        return ( m.group( index ), m.group( index+1 ) )
+    else:
+        return None
 
 # Let the fun begin!
 if __name__ == '__main__':
-    # Need to login first
-    if login():
-        find_data()
+    if login():                         # Login first
+        find_data()                     # Then go find the data
 

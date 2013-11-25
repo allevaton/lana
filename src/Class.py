@@ -5,8 +5,6 @@
 #  modules, and should be represented as a global class
 #
 
-from Time import Time
-
 class Class():
 	'''
 	A class to encapsulate all kinds of class data
@@ -15,11 +13,14 @@ class Class():
 	
 	'''
 	
-	subject = ''			# Section name. Ex: 'COMP'
-	course = ''				# Section number. Ex: '285'
-	section = ''			# The number of section. Ex '09'
+	subject = ''			# Ex: 'COMP'
+	course = ''				# Ex: '285'
+	section = ''			# Ex '09'
+	credits = 0.00			# Ex: 4.00
 	start_time = 0000		# 24 hour time
 	end_time = 0000			# 24 hour time
+	start_date = ()			# Ex: 8, 29		Month, Day
+	end_date = ()			# Ex: 12, 3		Month, Day
 	weekdays = []			# MTWRFSU
 	title = ''				# Ex: 'Object Oriented Programming'
 	instructor = ''			# Ex: 'Michael Werner'
@@ -31,5 +32,8 @@ class Class():
 	# Select few have something like this:
 	crn = ''				# Course registration number
 	
+	# Other stuff this may have missed
+	misc = ''
+
 	def __init__( self ):
 		pass
