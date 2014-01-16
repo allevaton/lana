@@ -196,6 +196,7 @@ def find_data():
     newClasses = pickle.load( f )
     print( newClasses[80].instructor )
 
+# is_start: Is this the start time or end time of the class?
 def parse_time( instr, is_start ):
     m = time_regex.match( instr )       # Match the regex
     
@@ -213,6 +214,7 @@ def parse_time( instr, is_start ):
     else:
         return None
 
+# is_start: Is this the start date or end date of the class?
 def parse_date( instr, is_start ):
     m = date_regex.match( instr )
 
