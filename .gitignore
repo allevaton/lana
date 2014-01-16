@@ -1,2 +1,6 @@
 *workbench*
 *.pyc
+*/open
+*/tags
+*/update_tags
+src/output.*

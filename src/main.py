@@ -3,7 +3,7 @@
 #   Lana main source
 #
 
-import re
+import re, pickle
 from mechanize import Browser
 from getpass import getpass
 from bs4 import BeautifulSoup
@@ -74,7 +74,7 @@ def find_data():
 
     br.form = list( br.forms() )[1]     # Save the controls
     
-    select_control = None               # We want to save the control
+    select_control = None               # We want to save the select control
     
     array = [' ']
 
@@ -99,7 +99,8 @@ def find_data():
     # Course Section Search page
     br.form = list( br.forms() )[1]     # Get the new page's form
     
-    response = br.submit( name='SUB_BTN', label='Advanced Search' ) # Submit the form
+    # Submit the form
+    response = br.submit( name='SUB_BTN', label='Advanced Search' ) 
     array = []
     
     print response.geturl()
@@ -134,8 +135,9 @@ def find_data():
                 td.append( i )
 
         try:
-            if td[1]['class'][0] == 'dddefault':  # Great, found a row of data!
+            if td[1]['class'][0] == 'dddefault':    # Great, found a row of data!
                 # Time to parse the data
+                # Ignore the 0th column, it's just a check box
                 # First column is CRN
                 crn = td[1].text
                 if crn == '':                       # Sometimes it's == ''
@@ -154,7 +156,7 @@ def find_data():
                 c.end_time = parse_time( td[9].text, False )
                 c.class_max = int( td[10].text )
                 c.class_cur = int( td[11].text )
-                # Skip 12. It's class remainder
+                # Skip 12; it's class remainder
                 c.instructor = td[13].text
                 c.start_date = parse_date( td[14].text, True )
                 c.end_date = parse_date( td[14].text, False )
@@ -162,25 +164,37 @@ def find_data():
                 
                 c.misc = td[16].text
                 
-                print c.subject
-                print c.course
-                print c.section
-                print c.campus
-                print c.credits
-                print c.title
-                print c.weekdays
-                print c.start_time
-                print c.end_time
-                print c.instructor
-                print c.start_date
-                print c.end_date
-                print c.location
-                print '---------------------------------------'
+                #print 'Subject: ', c.subject
+                #print 'Course: ', c.course
+                #print 'Section: ', c.section
+                #print 'Campus: ', c.campus
+                #print 'Credits: ', c.credits
+                #print 'Title: ', c.title
+                #print 'Days: ', c.weekdays
+                #print 'Start time: ', c.start_time
+                #print 'End time: ', c.end_time
+                #print 'Instructor: ', c.instructor
+                #print 'Start date: ', c.start_date
+                #print 'End date: ', c.end_date
+                #print 'Location: ', c.location
+                #print '---------------------------------------'
+                
+                classes.append( c )
             else:
                 continue
 
         except Exception as e:          # Handle if it wasn't a tag
             pass
+
+    # Output the classes array to a file
+    f = open( 'output.class', 'w' )
+    pickle.dump( classes, f )
+    f.close();
+
+    # Test reading them from the file.
+    f = open( 'output.class', 'r' )
+    newClasses = pickle.load( f )
+    print( newClasses[80].instructor )
 
 def parse_time( instr, is_start ):
     m = time_regex.match( instr )       # Match the regex
@@ -195,7 +209,6 @@ def parse_time( instr, is_start ):
         if m.group( index+1 ) == 'pm':  # Is this pm?
             if time < 1200:
                 time += 1200            # Convert it to 24 hour time
-
         return time
     else:
         return None
