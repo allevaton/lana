@@ -12,8 +12,8 @@ from Class import Class
 br = Browser()
 br.open( 'http://leopardweb.wit.edu/' ) # Open the page
 
-time_regex = re.compile( r"([0-9]*:?[0-9]*)\s*(am|pm)\s*\-([0-9]*:?[0-9]*)\s*(am|pm)\s*" )
-date_regex = re.compile( r"([0-9]*)[/]([0-9]*)\-([0-9]*)[/]([0-9]*)" )
+time_regex = re.compile( r"([0-9]*:?[0-9]*)\s*(am|pm)\s*\-\s*([0-9]*:?[0-9]*)\s*(am|pm)\s*" )
+date_regex = re.compile( r"([0-9]*)[/]([0-9]*)\s*\-\s*([0-9]*)[/]([0-9]*)" )
 
 def login():
     if br.title() == 'Sign In':             # Sign in page?
