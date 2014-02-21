@@ -4,6 +4,7 @@
 #
 
 import re, pickle
+from __future__ import print_function
 from mechanize import Browser
 from getpass import getpass
 from bs4 import BeautifulSoup
@@ -22,20 +23,20 @@ def login():
             if form.name == None:           # Since WIT doesn't name their forms...
                 br.form = list( br.forms() )[0]
                 
-                print 'Please login to continue.\n'
-                print 'Don\'t worry, these credentials are safe.'
+                print( 'Please login to continue.\n' )
+                print( 'Don\'t worry, these credentials are safe.' )
                 
                 try:
                     username = raw_input( 'Enter username: ' )
                     password = getpass( 'Enter password: ' )
                 except EOFError as e:
-                    print '\nCanceled'
+                    print( '\nCanceled' )
                     return False
                 except KeyboardInterrupt as e:
-                    print '\nCanceled'
+                    print( '\nCanceled' )
                     return False
                 finally:
-                    print 'Authenticating...'
+                    print( 'Authenticating...' )
                 
                 br['username'] = username
                 br['password'] = password
@@ -43,15 +44,15 @@ def login():
                 password = None         # Clear the password you entered
                 
                 response = br.submit()
-                print ''
+                print( '' )
                 
     if br.title() == 'Main Menu':       # Looks like you're already logged in
         # Good to go
-        print 'Good to go! (successfully logged in)'
+        print( 'Good to go! (successfully logged in)' )
         return True
     elif br.title() == 'Sign In':
         # Looks like you entered something wrong. Do it again
-        print 'Looks like you entered something wrong.\n'
+        print( 'Looks like you entered something wrong.\n' )
         return login()
 
 def follow_link( link_text ):
@@ -64,7 +65,7 @@ def follow_link( link_text ):
     return response
 
 def find_data():
-    print 'Loading...'
+    print( 'Loading...' )
 
     follow_link( 'Student' ).geturl()
     
@@ -87,7 +88,7 @@ def find_data():
                     # Now get the labels and store the actual
                     # data in the background somewhere
                     val = [label.text  for label in item.get_labels()][0]
-                    print '%d) %s' % (count, val )
+                    print( '%d) %s' % (count, val ) )
                     array.append( item.name )
                 count += 1              # Add to the counter
     
@@ -103,7 +104,7 @@ def find_data():
     response = br.submit( name='SUB_BTN', label='Advanced Search' ) 
     array = []
     
-    print response.geturl()
+    print( response.geturl() )
     
     # Advanced Search page
     br.form = list( br.forms() )[1]     # Get the new page's form
@@ -117,7 +118,7 @@ def find_data():
     
     select_control.value = array
     response = br.submit()
-    
+
     del array
 
     # So now we're on the big page of classes.
@@ -135,7 +136,7 @@ def find_data():
                 td.append( i )
 
         try:
-            if td[1]['class'][0] == 'dddefault':    # Great, found a row of data!
+            if td[1]['class'][0] == 'dddefault':    # Great, got a row of data!
                 # Time to parse the data
                 # Ignore the 0th column, it's just a check box
                 # First column is CRN
@@ -144,7 +145,7 @@ def find_data():
                     break                           # So don't bother with them
 
                 c.crn = crn
-                
+
                 c.subject = td[2].text
                 c.course = td[3].text
                 c.section = td[4].text
@@ -161,9 +162,9 @@ def find_data():
                 c.start_date = parse_date( td[14].text, True )
                 c.end_date = parse_date( td[14].text, False )
                 c.location = td[15].text
-                
+
                 c.misc = td[16].text
-                
+
                 #print 'Subject: ', c.subject
                 #print 'Course: ', c.course
                 #print 'Section: ', c.section
@@ -178,7 +179,7 @@ def find_data():
                 #print 'End date: ', c.end_date
                 #print 'Location: ', c.location
                 #print '---------------------------------------'
-                
+
                 classes.append( c )
             else:
                 continue
