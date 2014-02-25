@@ -3,8 +3,8 @@
 #   Lana main source
 #
 
-import re, pickle
 from __future__ import print_function
+import re, os, sqlite3
 from mechanize import Browser
 from getpass import getpass
 from bs4 import BeautifulSoup
@@ -96,6 +96,7 @@ def find_data():
     
     select_control.value = [array[selection]]
     response = br.submit()              # Submit the form
+    year =  str( array[selection] )
     
     # Course Section Search page
     br.form = list( br.forms() )[1]     # Get the new page's form
@@ -127,6 +128,33 @@ def find_data():
     soup = BeautifulSoup( response.read() )
     classes = []                        # Create an array of classes
     
+    # We're about good to insert data into the class database
+    # Let's create it
+    conn = sqlite3.connect( year + '.db' )
+    cur = conn.cursor()
+
+    cur.execute( """CREATE TABLE IF NOT EXISTS courses
+        (
+            CRN INTEGER PRIMARY KEY,
+            SUBJECT TEXT,
+            COURSE TEXT,
+            SECTION TEXT,
+            CAMPUS TEXT,
+            CREDITS REAL,
+            TITLE TEXT,
+            WEEKDAYS TEXT,
+            START_TIME TEXT,
+            END_TIME TEXT,
+            CLASS_MAX INTEGER,
+            CLASS_CURRENT INTEGER,
+            INSTRUCTOR TEXT,
+            START_DATE TEXT,
+            END_DATE TEXT,
+            LOCATION TEXT,
+            MISC TEXT
+        )
+                """ )
+
     for tr in soup.find_all( 'tr' ):    # Get all the trs
         c = Class()
         temp = tr.contents              # Split it into the children
@@ -165,37 +193,56 @@ def find_data():
 
                 c.misc = td[16].text
 
-                #print 'Subject: ', c.subject
-                #print 'Course: ', c.course
-                #print 'Section: ', c.section
-                #print 'Campus: ', c.campus
-                #print 'Credits: ', c.credits
-                #print 'Title: ', c.title
-                #print 'Days: ', c.weekdays
-                #print 'Start time: ', c.start_time
-                #print 'End time: ', c.end_time
-                #print 'Instructor: ', c.instructor
-                #print 'Start date: ', c.start_date
-                #print 'End date: ', c.end_date
-                #print 'Location: ', c.location
-                #print '---------------------------------------'
+                print( '---------------------------------------' )
+                print( 'Subject: ', c.subject )
+                print( 'Course: ', c.course )
+                print( 'Section: ', c.section )
+                print( 'Campus: ', c.campus )
+                print( 'Credits: ', c.credits )
+                print( 'Title: ', c.title )
+                print( 'Days: ', c.weekdays )
+                print( 'Start time: ', c.start_time )
+                print( 'End time: ', c.end_time )
+                print( 'Instructor: ', c.instructor )
+                print( 'Start date: ', c.start_date )
+                print( 'End date: ', c.end_date )
+                print( 'Location: ', c.location )
 
-                classes.append( c )
+                values = ( int( crn ), 
+                        td[2].text,
+                        td[3].text,
+                        td[4].text,
+                        td[5].text,
+                        float( td[6].text ), 
+                        td[7].text, 
+                        td[8].text,
+                        parse_time( td[9].text, True ), 
+                        parse_time( td[9].text, False ),
+                        int( td[10].text ), 
+                        int( td[11].text ), 
+                        td[13].text,
+                        td[14].text.split('-')[0], 
+                        td[14].text.split('-')[1],
+                        td[15].text, 
+                        td[16].text )
+
+                cur.execute( "INSERT INTO courses VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values )
+                #classes.append( c )
             else:
                 continue
 
         except Exception as e:          # Handle if it wasn't a tag
-            pass
+            print( "Caught an exception: " + str(e.args[0]) )
 
+    conn.commit()
     # Output the classes array to a file
-    f = open( 'output.class', 'w' )
-    pickle.dump( classes, f )
-    f.close();
+    #f = open( 'output.class', 'w' )
+    #f.close();
 
     # Test reading them from the file.
-    f = open( 'output.class', 'r' )
-    newClasses = pickle.load( f )
-    print( newClasses[80].instructor )
+    #f = open( 'output.class', 'r' )
+    #newClasses = pickle.load( f )
+    #print( newClasses[80].instructor )
 
 # is_start: Is this the start time or end time of the class?
 def parse_time( instr, is_start ):
