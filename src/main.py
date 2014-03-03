@@ -22,30 +22,27 @@ def login():
         for form in br.forms():             # Enumerate the forms. Should only be one
             if form.name == None:           # Since WIT doesn't name their forms...
                 br.form = list( br.forms() )[0]
-                
+
                 print( 'Please login to continue.\n' )
                 print( 'Don\'t worry, these credentials are safe.' )
-                
+
                 try:
                     username = raw_input( 'Enter username: ' )
                     password = getpass( 'Enter password: ' )
-                except EOFError as e:
+                except (EOFError, KeyboardInterrupt):
                     print( '\nCanceled' )
                     return False
-                except KeyboardInterrupt as e:
-                    print( '\nCanceled' )
-                    return False
-                finally:
-                    print( 'Authenticating...' )
-                
+
+                print( 'Authenticating...' )
+
                 br['username'] = username
                 br['password'] = password
 
                 password = None         # Clear the password you entered
-                
+
                 response = br.submit()
                 print( '' )
-                
+
     if br.title() == 'Main Menu':       # Looks like you're already logged in
         # Good to go
         print( 'Good to go! (successfully logged in)' )
@@ -68,15 +65,15 @@ def find_data():
     print( 'Loading...' )
 
     follow_link( 'Student' ).geturl()
-    
+
     follow_link( 'Registration' ).geturl()
-    
+
     follow_link( 'Course Section Search' ).geturl()
 
     br.form = list( br.forms() )[1]     # Save the controls
-    
+
     select_control = None               # We want to save the select control
-    
+
     array = [' ']
 
     count = 0
@@ -91,32 +88,32 @@ def find_data():
                     print( '%d) %s' % (count, val ) )
                     array.append( item.name )
                 count += 1              # Add to the counter
-    
+
     selection = int( raw_input( 'Enter selection: ' ) )
-    
+
     select_control.value = [array[selection]]
     response = br.submit()              # Submit the form
     year =  str( array[selection] )
-    
+
     # Course Section Search page
     br.form = list( br.forms() )[1]     # Get the new page's form
-    
+
     # Submit the form
-    response = br.submit( name='SUB_BTN', label='Advanced Search' ) 
+    response = br.submit( name='SUB_BTN', label='Advanced Search' )
     array = []
-    
+
     print( response.geturl() )
-    
+
     # Advanced Search page
     br.form = list( br.forms() )[1]     # Get the new page's form
-    
+
     for control in br.form.controls:    # Enumerate controls
         if control.type == 'select':    # Find the select form with all the classes
             select_control = control
             for item in control.items:  # Enumerate the items
                 array.append( item.name )
             break
-    
+
     select_control.value = array
     response = br.submit()
 
@@ -127,33 +124,34 @@ def find_data():
 
     soup = BeautifulSoup( response.read() )
     classes = []                        # Create an array of classes
-    
+
     # We're about good to insert data into the class database
     # Let's create it
     conn = sqlite3.connect( year + '.db' )
     cur = conn.cursor()
 
+    # TODO clean up this SQL to make more specific types instead of just texts
     cur.execute( """CREATE TABLE IF NOT EXISTS courses
-        (
-            CRN INTEGER PRIMARY KEY,
-            SUBJECT TEXT,
-            COURSE TEXT,
-            SECTION TEXT,
-            CAMPUS TEXT,
-            CREDITS REAL,
-            TITLE TEXT,
-            WEEKDAYS TEXT,
-            START_TIME TEXT,
-            END_TIME TEXT,
-            CLASS_MAX INTEGER,
-            CLASS_CURRENT INTEGER,
-            INSTRUCTOR TEXT,
-            START_DATE TEXT,
-            END_DATE TEXT,
-            LOCATION TEXT,
-            MISC TEXT
-        )
-                """ )
+    (
+        CID INTEGER PRIMARY KEY,
+        CRN INTEGER,
+        SUBJECT TEXT,
+        COURSE TEXT,
+        SECTION TEXT,
+        CAMPUS TEXT,
+        CREDITS REAL,
+        TITLE TEXT,
+        WEEKDAYS TEXT,
+        START_TIME TEXT,
+        END_TIME TEXT,
+        CLASS_MAX INTEGER,
+        CLASS_CURRENT INTEGER,
+        INSTRUCTOR TEXT,
+        START_DATE TEXT,
+        END_DATE TEXT,
+        LOCATION TEXT,
+        MISC TEXT
+    )""" )
 
     for tr in soup.find_all( 'tr' ):    # Get all the trs
         c = Class()
@@ -172,58 +170,58 @@ def find_data():
                 if crn == '':                       # Sometimes it's == ''
                     break                           # So don't bother with them
 
-                c.crn = crn
+                #c.crn = crn
 
-                c.subject = td[2].text
-                c.course = td[3].text
-                c.section = td[4].text
-                c.campus = td[5].text
-                c.credits = float( td[6].text )
-                c.title = td[7].text
-                c.weekdays = list( td[8].text )
-                c.start_time = parse_time( td[9].text, True )
-                c.end_time = parse_time( td[9].text, False )
-                c.class_max = int( td[10].text )
-                c.class_cur = int( td[11].text )
-                # Skip 12; it's class remainder
-                c.instructor = td[13].text
-                c.start_date = parse_date( td[14].text, True )
-                c.end_date = parse_date( td[14].text, False )
-                c.location = td[15].text
+                #c.subject = td[2].text
+                #c.course = td[3].text
+                #c.section = td[4].text
+                #c.campus = td[5].text
+                #c.credits = float( td[6].text )
+                #c.title = td[7].text
+                #c.weekdays = list( td[8].text )
+                #c.start_time = parse_time( td[9].text, True )
+                #c.end_time = parse_time( td[9].text, False )
+                #c.class_max = int( td[10].text )
+                #c.class_cur = int( td[11].text )
+                ## Skip 12; it's class remainder
+                #c.instructor = td[13].text
+                #c.start_date = parse_date( td[14].text, True )
+                #c.end_date = parse_date( td[14].text, False )
+                #c.location = td[15].text
 
-                c.misc = td[16].text
+                #c.misc = td[16].text
 
-                print( '---------------------------------------' )
-                print( 'Subject: ', c.subject )
-                print( 'Course: ', c.course )
-                print( 'Section: ', c.section )
-                print( 'Campus: ', c.campus )
-                print( 'Credits: ', c.credits )
-                print( 'Title: ', c.title )
-                print( 'Days: ', c.weekdays )
-                print( 'Start time: ', c.start_time )
-                print( 'End time: ', c.end_time )
-                print( 'Instructor: ', c.instructor )
-                print( 'Start date: ', c.start_date )
-                print( 'End date: ', c.end_date )
-                print( 'Location: ', c.location )
+                #print( '---------------------------------------' )
+                #print( 'Subject: ', c.subject )
+                #print( 'Course: ', c.course )
+                #print( 'Section: ', c.section )
+                #print( 'Campus: ', c.campus )
+                #print( 'Credits: ', c.credits )
+                #print( 'Title: ', c.title )
+                #print( 'Days: ', c.weekdays )
+                #print( 'Start time: ', c.start_time )
+                #print( 'End time: ', c.end_time )
+                #print( 'Instructor: ', c.instructor )
+                #print( 'Start date: ', c.start_date )
+                #print( 'End date: ', c.end_date )
+                #print( 'Location: ', c.location )
 
-                values = ( int( crn ), 
+                values = ( int( crn ),
                         td[2].text,
                         td[3].text,
                         td[4].text,
                         td[5].text,
-                        float( td[6].text ), 
-                        td[7].text, 
+                        float( td[6].text ),
+                        td[7].text,
                         td[8].text,
-                        parse_time( td[9].text, True ), 
+                        parse_time( td[9].text, True ),
                         parse_time( td[9].text, False ),
-                        int( td[10].text ), 
-                        int( td[11].text ), 
+                        int( td[10].text ),
+                        int( td[11].text ),
                         td[13].text,
-                        td[14].text.split('-')[0], 
+                        td[14].text.split('-')[0],
                         td[14].text.split('-')[1],
-                        td[15].text, 
+                        td[15].text,
                         td[16].text )
 
                 cur.execute( "INSERT INTO courses VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values )
@@ -232,7 +230,8 @@ def find_data():
                 continue
 
         except Exception as e:          # Handle if it wasn't a tag
-            print( "Caught an exception: " + str(e.args[0]) )
+            #print( "Caught an exception: " + str(e.args[0]) )
+            pass
 
     conn.commit()
     # Output the classes array to a file
@@ -247,7 +246,7 @@ def find_data():
 # is_start: Is this the start time or end time of the class?
 def parse_time( instr, is_start ):
     m = time_regex.match( instr )       # Match the regex
-    
+
     index = 1 if is_start else 3        # Used to simplify is_start idea
 
     if m:                               # Found a match?
