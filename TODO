@@ -1,0 +1,7 @@
+TODO'S AND FIXES
+--------------------------------------------------------------------------------
+* TESTING:
+    * Read clases from a file to start being able to create a schedule
+        Avoids making a UI to test with
+
+* Encapsulate functionality into a class system

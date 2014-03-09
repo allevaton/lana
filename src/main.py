@@ -4,12 +4,17 @@
 #
 
 from __future__ import print_function
-import re, os, sqlite3
+import re
+import os
+import sqlite3
+
 from mechanize import Browser
 from getpass import getpass
 from bs4 import BeautifulSoup
+
 from Class import Class
 
+# TODO change this to put it in __main__
 br = Browser()
 br.open( 'http://leopardweb.wit.edu/' ) # Open the page
 
@@ -20,7 +25,7 @@ def login():
     if br.title() == 'Sign In':             # Sign in page?
         # Awesome, we're at the sign in page
         for form in br.forms():             # Enumerate the forms. Should only be one
-            if form.name == None:           # Since WIT doesn't name their forms...
+            if form.name is None:           # Since WIT doesn't name their forms...
                 br.form = list( br.forms() )[0]
 
                 print( 'Please login to continue.\n' )
@@ -102,14 +107,15 @@ def find_data():
     response = br.submit( name='SUB_BTN', label='Advanced Search' )
     array = []
 
-    print( response.geturl() )
+    #print( response.geturl() )
 
     # Advanced Search page
     br.form = list( br.forms() )[1]     # Get the new page's form
 
     for control in br.form.controls:    # Enumerate controls
-        if control.type == 'select':    # Find the select form with all the classes
+        if control.type == 'select':    # Find the select form with classes
             select_control = control
+
             for item in control.items:  # Enumerate the items
                 array.append( item.name )
             break
@@ -121,37 +127,20 @@ def find_data():
 
     # So now we're on the big page of classes.
     # use response.read() to get the HTML
-
     soup = BeautifulSoup( response.read() )
     classes = []                        # Create an array of classes
 
     # We're about good to insert data into the class database
-    # Let's create it
+    # Let's create it if it doesn't exist
     conn = sqlite3.connect( year + '.db' )
     cur = conn.cursor()
 
-    # TODO clean up this SQL to make more specific types instead of just texts
-    cur.execute( """CREATE TABLE IF NOT EXISTS courses
-    (
-        CID INTEGER PRIMARY KEY,
-        CRN INTEGER,
-        SUBJECT TEXT,
-        COURSE TEXT,
-        SECTION TEXT,
-        CAMPUS TEXT,
-        CREDITS REAL,
-        TITLE TEXT,
-        WEEKDAYS TEXT,
-        START_TIME TEXT,
-        END_TIME TEXT,
-        CLASS_MAX INTEGER,
-        CLASS_CURRENT INTEGER,
-        INSTRUCTOR TEXT,
-        START_DATE TEXT,
-        END_DATE TEXT,
-        LOCATION TEXT,
-        MISC TEXT
-    )""" )
+    # TODO clean up this SQL to make more specific types instead
+    # of just texts
+    with open( 'create_table.sql' ) as f:
+        cur.execute( f.read() )
+
+    count = 0
 
     for tr in soup.find_all( 'tr' ):    # Get all the trs
         c = Class()
@@ -170,6 +159,7 @@ def find_data():
                 if crn == '':                       # Sometimes it's == ''
                     break                           # So don't bother with them
 
+                # TODO delete this when ready
                 #c.crn = crn
 
                 #c.subject = td[2].text
@@ -206,45 +196,91 @@ def find_data():
                 #print( 'End date: ', c.end_date )
                 #print( 'Location: ', c.location )
 
-                values = ( int( crn ),
-                        td[2].text,
-                        td[3].text,
-                        td[4].text,
-                        td[5].text,
-                        float( td[6].text ),
-                        td[7].text,
-                        td[8].text,
-                        parse_time( td[9].text, True ),
-                        parse_time( td[9].text, False ),
-                        int( td[10].text ),
-                        int( td[11].text ),
-                        td[13].text,
-                        td[14].text.split('-')[0],
-                        td[14].text.split('-')[1],
-                        td[15].text,
-                        td[16].text )
+                # Fixes the CRN unique constraint errors
+                count += 1
 
-                cur.execute( "INSERT INTO courses VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values )
-                #classes.append( c )
+                # Yeah, this is crazy.
+                # Sorry about that, PEP 8
+                values = \
+                (
+                    count,                  # primary key
+                    int( crn ),             # crn
+                    td[2].text,             # subject
+                    td[3].text,             # course
+                    td[4].text,             # section
+                    td[5].text,             # campus
+                    float( td[6].text ),    # credits
+                    td[7].text,             # title
+                    td[8].text,             # weekdays
+                    parse_time( td[9].text, True ), # start time
+                    parse_time( td[9].text, False ),# end time
+                    int( td[10].text ),     # class max
+                    int( td[11].text ),     # class current
+                    # This eliminates all stupid whitespace:
+                    ' '.join( td[13].text.split() ),# instructor
+                    td[14].text.split('-')[0], # start date
+                    td[14].text.split('-')[1], # end date
+                    td[15].text,            # location
+                    td[16].text             # misc
+                )
+
+                # Insert the data into the database
+                cur.execute( 'INSERT INTO courses VALUES (?,?,?,?,?,?,?,?,'
+                           + '?,?,?,?,?,?,?,?,?,?)''', values )
             else:
                 continue
 
         except Exception as e:          # Handle if it wasn't a tag
-            #print( "Caught an exception: " + str(e.args[0]) )
+            #print( 'Error: {0} '.format( e ) )
             pass
 
+    # Commit the SQL
     conn.commit()
-    # Output the classes array to a file
-    #f = open( 'output.class', 'w' )
-    #f.close();
+    conn.close()
 
-    # Test reading them from the file.
-    #f = open( 'output.class', 'r' )
-    #newClasses = pickle.load( f )
-    #print( newClasses[80].instructor )
+def get_classes( database ):
+    """Get classes based on user preferences
+
+    Keyword arguments:
+    database -- the SQLite3 *.db file to reference
+    """
+
+    if not os.path.isfile( database ):
+        return None
+
+    conn = sqlite3.connect( database )
+    c = conn.cursor()
+
+    # This is the temporary way of doing it
+    f = open( 'classes.txt' )
+
+    courses = []
+
+    # Courses and subjects are separated in the file by space
+    for line in f:
+        s = line.split(' ')
+        courses.append( (s[0], s[1].replace( '\n', '' ) ) )
+
+    rows = []
+
+    # Let's print out the classes for those types
+    for subj_course in courses:
+        c.execute( 'SELECT * FROM courses WHERE SUBJECT=? AND COURSE=?',
+                subj_course )
+        rows.append( c.fetchall() )
+
+    for r in rows:
+        print( r )
 
 # is_start: Is this the start time or end time of the class?
 def parse_time( instr, is_start ):
+    """Parses the given `instr' time string and returns a better one
+
+    Keyword arguments:
+    instr -- the input time string
+    is_start -- determines whether or not this is a start time or
+                end time. This matters for regex parsing.
+    """
     m = time_regex.match( instr )       # Match the regex
 
     index = 1 if is_start else 3        # Used to simplify is_start idea
@@ -274,6 +310,8 @@ def parse_date( instr, is_start ):
 
 # Let the fun begin!
 if __name__ == '__main__':
-    if login():                         # Login first
-        find_data()                     # Then go find the data
+    #if login():                         # Login first
+    #    find_data()                     # Then go find the data
+
+    get_classes( '201420.db' )
 

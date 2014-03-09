@@ -6,18 +6,17 @@
 #
 
 class Class():
-    '''
-    A class to encapsulate all kinds of class data
+    """A class to encapsulate all kinds of class data
     This should be in a global form, so all modules should end up
     with the same data.
-    '''
+    """
 
     subject = ''            # Ex: 'COMP'
-    course = ''         # Ex: '285'
+    course = ''             # Ex: '285'
     section = ''            # Ex '09'
     credits = 0.00          # Ex: 4.00
-    start_time = 0000       # 24 hour time
-    end_time = 0000         # 24 hour time
+    start_time = 0          # 24 hour time
+    end_time = 0            # 24 hour time
     start_date = ()         # Ex: 8, 29     Month, Day
     end_date = ()           # Ex: 12, 3     Month, Day
     weekdays = []           # MTWRFSU
