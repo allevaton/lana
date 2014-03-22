@@ -7,14 +7,35 @@
 #
 
 from ClassDataScraper import ClassDataScraper
-from mechanize import Browser, URLError
+from mechanize import Browser, URLError, _http
+from cookielib import LWPCookieJar
 
 
 class LconnectScraper(ClassDataScraper):
     LCONNECT_URL = 'http://leopardweb.wit.edu/'
+    USERAGENT = 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.1) ' \
+                + 'Gecko/20100122 firefox/3.6.1'
 
     def __init__(self):
+        # Create a cookie jar and a browser
+        self._cookieJar = LWPCookieJar()
         self._browser = Browser()
+        self._browser.set_cookiejar(self._cookieJar)
+
+        # Set Browser options
+        self._browser.set_handle_equiv(True)
+        self._browser.set_handle_gzip(True)
+        self._browser.set_handle_redirect(True)
+        self._browser.set_handle_referer(True)
+        self._browser.set_handle_robots(False)
+        self._browser.set_handle_refresh(_http.HTTPRefreshProcessor(),
+                                         max_time=1)
+        self._browser.addheaders = [('User-agent', LconnectScraper.USERAGENT)]
+
+        # Debugging
+        self._browser.set_debug_http(True)
+        self._browser.set_debug_redirects(True)
+        self._browser.set_debug_responses(True)
 
     def getName(self):
         return "Lconnect Scraper"
