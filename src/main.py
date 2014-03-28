@@ -17,13 +17,12 @@ from bs4 import BeautifulSoup
 #from Class import Class
 
 br = Browser()
-br.open('http://leopardweb.wit.edu/')  # Open the page
 
 time_regex = re.compile(r'([0-9]*:?[0-9]*)\s*(am|pm)\s*\-\s*'
                         + r'([0-9]*:?[0-9]*)\s*(am|pm)\s*')
 date_regex = re.compile(r'([0-9]*)[/]([0-9]*)\s*\-\s*([0-9]*)[/]([0-9]*)')
 
-# Python3's input() hack
+# input hack
 input = getattr(__builtin__, 'raw_input', input)
 
 
@@ -31,6 +30,7 @@ def login():
     """Handles all web scraping to log in to Wentworth's Lconnect.
     """
 
+    br.open('http://leopardweb.wit.edu/')  # Open the page
     if br.title() == 'Sign In':         # Sign in page?
         # Awesome, we're at the sign in page
         for form in br.forms():         # Enumerate the forms. Should only be 1
@@ -73,6 +73,9 @@ def follow_link(link_text):
 
     Keyword arguments:
     link_text -- string: the text of the the link to follow
+
+    Returns:
+    mechanize response object
     """
 
     response = None
@@ -123,7 +126,7 @@ def find_data():
     year = str(array[selection])
 
     # Course Section Search page
-    br.form = list(br.forms())[1]     # Get the new page's form
+    br.form = list(br.forms())[1]       # Get the new page's form
 
     # Submit the form
     response = br.submit(name='SUB_BTN', label='Advanced Search')
@@ -181,7 +184,7 @@ def find_data():
                 if crn == '':                       # Sometimes it's == ''
                     break                           # So don't bother with them
 
-                # TODO delete this when ready
+                # TODO delete this when ready {{{
                 #c.crn = crn
 
                 #c.subject = td[2].text
@@ -217,12 +220,12 @@ def find_data():
                 #print( 'Start date: ', c.start_date )
                 #print( 'End date: ', c.end_date )
                 #print( 'Location: ', c.location )
+                #}}}
 
                 # Fixes the CRN unique constraint errors
                 count += 1
 
                 # Yeah, this is crazy.
-                # Sorry about that, PEP 8
                 values = \
                     (
                         count,                  # primary key
@@ -262,7 +265,8 @@ def find_data():
 
 
 def get_classes(database):
-    """Get classes based on user preferences
+    """Get classes based on user preferences. This will only pull the
+    classes and return an array of rows.
 
     Keyword arguments:
     database -- file string: the SQLite3 *.db file to reference
@@ -295,11 +299,10 @@ def get_classes(database):
                   subj_course)
         rows.append(c.fetchall())
 
-    for r in rows:
-        print(r)
+    # Return the array of rows
+    return rows
 
 
-# is_start: Is this the start time or end time of the class?
 def parse_time(instr, is_start):
     """Parses the given `instr' time string and returns a better one
 
@@ -326,7 +329,6 @@ def parse_time(instr, is_start):
         return None
 
 
-# is_start: Is this the start date or end date of the class?
 def parse_date(instr, is_start):
     """Parses the given `instr' date string and returns a tuple of month
     and date
@@ -348,10 +350,8 @@ def parse_date(instr, is_start):
 
 # Let the fun begin!
 if __name__ == '__main__':
-    # Login first
-    if login():
-        # Then go find the data
-        find_data()
+    # Login and find the data
+    if login(): find_data()
 
     print('Pulling these classes for you')
     get_classes('201420.db')
