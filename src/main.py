@@ -184,44 +184,6 @@ def find_data():
                 if crn == '':                       # Sometimes it's == ''
                     break                           # So don't bother with them
 
-                # TODO delete this when ready {{{
-                #c.crn = crn
-
-                #c.subject = td[2].text
-                #c.course = td[3].text
-                #c.section = td[4].text
-                #c.campus = td[5].text
-                #c.credits = float( td[6].text )
-                #c.title = td[7].text
-                #c.weekdays = list( td[8].text )
-                #c.start_time = parse_time( td[9].text, True )
-                #c.end_time = parse_time( td[9].text, False )
-                #c.class_max = int( td[10].text )
-                #c.class_cur = int( td[11].text )
-                ## Skip 12; it's class remainder
-                #c.instructor = td[13].text
-                #c.start_date = parse_date( td[14].text, True )
-                #c.end_date = parse_date( td[14].text, False )
-                #c.location = td[15].text
-
-                #c.misc = td[16].text
-
-                #print( '---------------------------------------' )
-                #print( 'Subject: ', c.subject )
-                #print( 'Course: ', c.course )
-                #print( 'Section: ', c.section )
-                #print( 'Campus: ', c.campus )
-                #print( 'Credits: ', c.credits )
-                #print( 'Title: ', c.title )
-                #print( 'Days: ', c.weekdays )
-                #print( 'Start time: ', c.start_time )
-                #print( 'End time: ', c.end_time )
-                #print( 'Instructor: ', c.instructor )
-                #print( 'Start date: ', c.start_date )
-                #print( 'End date: ', c.end_date )
-                #print( 'Location: ', c.location )
-                #}}}
-
                 # Fixes the CRN unique constraint errors
                 count += 1
 
@@ -351,7 +313,8 @@ def parse_date(instr, is_start):
 # Let the fun begin!
 if __name__ == '__main__':
     # Login and find the data
-    if login(): find_data()
+    if login():
+        find_data()
 
     print('Pulling these classes for you')
     get_classes('201420.db')
