@@ -24,7 +24,7 @@ class LconnectScraper(ClassDataScraper):
 
         # Set Browser options
         self._browser.set_handle_equiv(True)
-        self._browser.set_handle_gzip(True)
+        self._browser.set_handle_gzip(True)  # experimental?
         self._browser.set_handle_redirect(True)
         self._browser.set_handle_referer(True)
         self._browser.set_handle_robots(False)
@@ -38,11 +38,11 @@ class LconnectScraper(ClassDataScraper):
         self._browser.set_debug_responses(True)
 
     def getName(self):
-        return "Lconnect Scraper"
+        return 'Lconnect Scraper'
 
     def connect(self):
-        """
-        Attempts to connect to the data source
+        """Attempts to connect to the data source
+        Timeout: 8 seconds
         """
         try:
             # Try to open a connection. 8 Second timeout
@@ -52,22 +52,20 @@ class LconnectScraper(ClassDataScraper):
             return False
 
     def disconnect(self):
-        """
-        Disconnects from the data source
+        """Disconnects from the data source
         """
 
         self._browser.close()
 
     def requiresAuthentication(self):
-        """
-        Returns whether or not the scraper requires authentication information
+        """Returns whether or not the scraper requires authentication
+        information
         """
 
         return True
 
     def authenticate(self, username, password):
-        """
-        Attempts to authenticate the scraper using username and password
+        """Attempts to authenticate the scraper using username and password
         """
 
         # If we're on the sign in page, try to sign in
@@ -77,6 +75,9 @@ class LconnectScraper(ClassDataScraper):
                     self._browser.form = list(self._browser.forms())[0]
                     self._browser['username'] = username
                     self._browser['password'] = password
+
+                    username = None
+                    password = None
 
                     self._browser.submit()
 
@@ -88,8 +89,7 @@ class LconnectScraper(ClassDataScraper):
             return False
 
     def getClassData(self):
-        """
-        Returns a list of ClassData objects
+        """Returns a list of ClassData objects
         """
 
         return []
