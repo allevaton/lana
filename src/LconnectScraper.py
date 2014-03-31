@@ -1,4 +1,4 @@
-#!/bin/python2
+#!/bin/python
 #
 #   Lconnect Scraper
 #
@@ -7,66 +7,102 @@
 #
 
 from ClassDataScraper import ClassDataScraper
-from mechanize import Browser, URLError, _http
-from cookielib import LWPCookieJar
-
+import http.cookiejar
+import urllib.request
+import urllib.parse
+import html.parser
 
 class LconnectScraper(ClassDataScraper):
     LCONNECT_URL = 'http://leopardweb.wit.edu/'
     USERAGENT = 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.1) ' \
                 + 'Gecko/20100122 firefox/3.6.1'
 
+    class _LoginPageParser(html.parser.HTMLParser):
+        def __init__(self):
+            self._data = dict()
+            html.parser.HTMLParser.__init__(self)
+
+        def getData(self, name):
+            return str(self._data.get(name))
+
+        def _getValueFromAttrs(self, attrs, name):
+            values = [ x for x in attrs if x[0] == name ]
+            if len(values) > 0:
+                return values[0][1]
+            else:
+                return None
+
+        def handle_starttag(self, tag, attrs):
+            if tag == 'form':
+                self._data['postUrl'] = self._getValueFromAttrs(attrs, 'action')
+            elif tag == 'input':
+                tagName = self._getValueFromAttrs(attrs, 'name')
+                if tagName == 'lt':
+                    self._data['lt'] = self._getValueFromAttrs(attrs,'value')
+                elif tagName == 'execution':
+                    self._data['execution'] = self._getValueFromAttrs(attrs,'value')
+                elif tagName == '_eventId':
+                    self._data['_eventId'] = self._getValueFromAttrs(attrs,'value')
+
     def __init__(self):
         # Create a cookie jar and a browser
-        self._cookieJar = LWPCookieJar()
-        self._browser = Browser()
-        self._browser.set_cookiejar(self._cookieJar)
+        self._cookieJar = http.cookiejar.CookieJar(http.cookiejar.DefaultCookiePolicy())
+        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self._cookieJar))
 
-        # Set Browser options
-        self._browser.set_handle_equiv(True)
-        self._browser.set_handle_gzip(True)  # experimental?
-        self._browser.set_handle_redirect(True)
-        self._browser.set_handle_referer(True)
-        self._browser.set_handle_robots(False)
-        self._browser.set_handle_refresh(_http.HTTPRefreshProcessor(),
-                                         max_time=1)
-        self._browser.addheaders = [('User-agent', LconnectScraper.USERAGENT)]
-
-        # Debugging
-        self._browser.set_debug_http(True)
-        self._browser.set_debug_redirects(True)
-        self._browser.set_debug_responses(True)
+        self._opener.addheaders = [('User-agent', LconnectScraper.USERAGENT)]
+        self._connection = None
 
     def getName(self):
-        return 'Lconnect Scraper'
+        return "Lconnect Scraper"
 
     def connect(self):
-        """Attempts to connect to the data source
-        Timeout: 8 seconds
+        """
+        Attempts to connect to the data source
         """
         try:
             # Try to open a connection. 8 Second timeout
-            self._browser.open(LconnectScraper.LCONNECT_URL, timeout=8)
+            self._connection = self._opener.open(LconnectScraper.LCONNECT_URL, timeout=8)
             return True
         except URLError:
             return False
 
     def disconnect(self):
-        """Disconnects from the data source
         """
-
-        self._browser.close()
+        Disconnects from the data source
+        """
+        if self._connection:
+            self._connection.close()
 
     def requiresAuthentication(self):
-        """Returns whether or not the scraper requires authentication
-        information
+        """
+        Returns whether or not the scraper requires authentication information
         """
 
         return True
 
     def authenticate(self, username, password):
-        """Attempts to authenticate the scraper using username and password
         """
+        Attempts to authenticate the scraper using username and password
+        """
+
+        loginParser = LconnectScraper._LoginPageParser()
+        loginParser.feed(self._connection.read().decode())
+
+        postData = urllib.parse.urlencode({'lt' : loginParser.getData('lt'),
+                                            'execution' : loginParser.getData('execution'),
+                                            '_eventId' : loginParser.getData('_eventId'),
+                                            'username' : username,
+                                            'password' : password })
+
+        postData = postData.encode('utf-8')
+        postUrl = urllib.parse.urljoin('https://cas.wit.edu', loginParser.getData('postUrl'))
+        print("Post URL: %s" % postUrl)
+        request = urllib.request.Request(postUrl)
+        request.add_header('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8')
+
+        response = self._opener.open(request, postData, timeout=8)
+        print(response.read().decode('utf-8', errors='ignore'))
+        return
 
         # If we're on the sign in page, try to sign in
         if self._browser.title() == 'Sign In':
@@ -75,9 +111,6 @@ class LconnectScraper(ClassDataScraper):
                     self._browser.form = list(self._browser.forms())[0]
                     self._browser['username'] = username
                     self._browser['password'] = password
-
-                    username = None
-                    password = None
 
                     self._browser.submit()
 
@@ -89,7 +122,8 @@ class LconnectScraper(ClassDataScraper):
             return False
 
     def getClassData(self):
-        """Returns a list of ClassData objects
+        """
+        Returns a list of ClassData objects
         """
 
         return []

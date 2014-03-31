@@ -1,4 +1,4 @@
-#!/bin/python2
+#!/bin/python
 #
 #   Lana Class
 #
@@ -6,14 +6,8 @@
 #
 #
 
-from __future__ import print_function
 from LconnectScraper import LconnectScraper
 from getpass import getpass
-import __builtin__
-
-# Python3's input() hack
-input = getattr(__builtin__, 'raw_input', input)
-
 
 class Lana:
     """Main Lana class for abstraction
