@@ -12,6 +12,7 @@ import urllib.request
 import urllib.parse
 import html.parser
 
+
 class LconnectScraper(ClassDataScraper):
     LCONNECT_URL = 'http://leopardweb.wit.edu/'
     USERAGENT = 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.1) ' \
@@ -26,7 +27,7 @@ class LconnectScraper(ClassDataScraper):
             return str(self._data.get(name))
 
         def _getValueFromAttrs(self, attrs, name):
-            values = [ x for x in attrs if x[0] == name ]
+            values = [x for x in attrs if x[0] == name]
             if len(values) > 0:
                 return values[0][1]
             else:
@@ -38,11 +39,11 @@ class LconnectScraper(ClassDataScraper):
             elif tag == 'input':
                 tagName = self._getValueFromAttrs(attrs, 'name')
                 if tagName == 'lt':
-                    self._data['lt'] = self._getValueFromAttrs(attrs,'value')
+                    self._data['lt'] = self._getValueFromAttrs(attrs, 'value')
                 elif tagName == 'execution':
-                    self._data['execution'] = self._getValueFromAttrs(attrs,'value')
+                    self._data['execution'] = self._getValueFromAttrs(attrs, 'value')
                 elif tagName == '_eventId':
-                    self._data['_eventId'] = self._getValueFromAttrs(attrs,'value')
+                    self._data['_eventId'] = self._getValueFromAttrs(attrs, 'value')
 
     def __init__(self):
         # Create a cookie jar and a browser
@@ -53,11 +54,10 @@ class LconnectScraper(ClassDataScraper):
         self._connection = None
 
     def getName(self):
-        return "Lconnect Scraper"
+        return 'Lconnect Scraper'
 
     def connect(self):
-        """
-        Attempts to connect to the data source
+        """Attempts to connect to the data source
         """
         try:
             # Try to open a connection. 8 Second timeout
@@ -67,36 +67,35 @@ class LconnectScraper(ClassDataScraper):
             return False
 
     def disconnect(self):
-        """
-        Disconnects from the data source
+        """Disconnects from the data source
         """
         if self._connection:
             self._connection.close()
 
     def requiresAuthentication(self):
-        """
-        Returns whether or not the scraper requires authentication information
+        """Returns whether or not the scraper requires authentication
+        information
         """
 
         return True
 
     def authenticate(self, username, password):
-        """
-        Attempts to authenticate the scraper using username and password
+        """Attempts to authenticate the scraper using username and password
         """
 
         loginParser = LconnectScraper._LoginPageParser()
         loginParser.feed(self._connection.read().decode())
 
-        postData = urllib.parse.urlencode({'lt' : loginParser.getData('lt'),
-                                            'execution' : loginParser.getData('execution'),
-                                            '_eventId' : loginParser.getData('_eventId'),
-                                            'username' : username,
-                                            'password' : password })
+        postData = urllib.parse.urlencode(
+            {'lt': loginParser.getData('lt'),
+             'execution': loginParser.getData('execution'),
+             '_eventId': loginParser.getData('_eventId'),
+             'username': username,
+             'password': password})
 
         postData = postData.encode('utf-8')
         postUrl = urllib.parse.urljoin('https://cas.wit.edu', loginParser.getData('postUrl'))
-        print("Post URL: %s" % postUrl)
+        print('Post URL: %s' % postUrl)
         request = urllib.request.Request(postUrl)
         request.add_header('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8')
 
@@ -122,8 +121,7 @@ class LconnectScraper(ClassDataScraper):
             return False
 
     def getClassData(self):
-        """
-        Returns a list of ClassData objects
+        """Returns a list of ClassData objects
         """
 
         return []
