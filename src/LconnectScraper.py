@@ -24,7 +24,7 @@ class LconnectScraper(ClassDataScraper):
             self._tagName = tagName
             self._data = None
             self._lastOpenTag = None
-            html.parser.HTMLParser.__init__(self)
+            super().__init__()
 
         def getData(self):
             return self._data
@@ -39,7 +39,7 @@ class LconnectScraper(ClassDataScraper):
     class _LoginPageParser(html.parser.HTMLParser):
         def __init__(self):
             self._data = dict()
-            html.parser.HTMLParser.__init__(self)
+            super().__init__()
 
         def getData(self, name):
             return str(self._data.get(name))
