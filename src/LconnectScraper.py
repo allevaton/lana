@@ -18,6 +18,24 @@ class LconnectScraper(ClassDataScraper):
     USERAGENT = 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.1) ' \
                 + 'Gecko/20100122 firefox/3.6.1'
 
+    # Saves the value of the tag that is passed in the constructor
+    class _PageDataParser(html.parser.HTMLParser):
+        def __init__(self, tagName):
+            self._tagName = tagName
+            self._data = None
+            self._lastOpenTag = None
+            html.parser.HTMLParser.__init__(self)
+
+        def getData(self):
+            return self._data
+
+        def handle_starttag(self, tag, attrs):
+            self._lastOpenTag = tag
+
+        def handle_data(self, data):
+            if self._lastOpenTag == self._tagName and self._data is None:
+                self._data = data
+
     class _LoginPageParser(html.parser.HTMLParser):
         def __init__(self):
             self._data = dict()
@@ -100,25 +118,13 @@ class LconnectScraper(ClassDataScraper):
         request.add_header('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8')
 
         response = self._opener.open(request, postData, timeout=8)
-        print(response.read().decode('utf-8', errors='ignore'))
-        return
+        responseText = response.read().decode('utf-8', errors='ignore')
+        titleParser = LconnectScraper._PageDataParser('title')
+        titleParser.feed(responseText)
 
-        # If we're on the sign in page, try to sign in
-        if self._browser.title() == 'Sign In':
-            for form in self._browser.forms():
-                if form.name is None:
-                    self._browser.form = list(self._browser.forms())[0]
-                    self._browser['username'] = username
-                    self._browser['password'] = password
+        titleValue = titleParser.getData()
 
-                    self._browser.submit()
-
-        # If the browser's title is 'Main Menu',
-        # we've either successfully logged in, or we were already
-        if self._browser.title() == 'Main Menu':
-            return True
-        else:
-            return False
+        return titleValue == 'Main Menu'
 
     def getClassData(self):
         """Returns a list of ClassData objects
