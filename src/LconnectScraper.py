@@ -113,7 +113,7 @@ class LconnectScraper(ClassDataScraper):
 
         postData = postData.encode('utf-8')
         postUrl = urllib.parse.urljoin('https://cas.wit.edu', loginParser.getData('postUrl'))
-        print('Post URL: %s' % postUrl)
+        print('Post URL: %s' % (postUrl))
         request = urllib.request.Request(postUrl)
         request.add_header('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8')
 

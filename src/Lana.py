@@ -9,6 +9,7 @@
 from LconnectScraper import LconnectScraper
 from getpass import getpass
 
+
 class Lana:
     """Main Lana class for abstraction
     TODO DOCS?
