@@ -19,7 +19,7 @@ from bs4 import BeautifulSoup
 br = Browser()
 
 time_regex = re.compile(r'([0-9]*:?[0-9]*)\s*(am|pm)\s*\-\s*'
-                        + r'([0-9]*:?[0-9]*)\s*(am|pm)\s*')
+                        r'([0-9]*:?[0-9]*)\s*(am|pm)\s*')
 date_regex = re.compile(r'([0-9]*)[/]([0-9]*)\s*\-\s*([0-9]*)[/]([0-9]*)')
 
 # input hack
