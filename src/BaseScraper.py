@@ -7,9 +7,12 @@
 #
 
 from abc import abstractmethod
+from getpass import getpass
 
 
 class BaseScraper():
+    name = ''
+
     @abstractmethod
     def __str__(self):
         """ Returns the name of the scraper
@@ -29,19 +32,13 @@ class BaseScraper():
         pass
 
     @abstractmethod
-    def requires_auth(self):
-        """ Returns whether or not the scraper requires authentication information
-        """
-        return False
-
-    @abstractmethod
     def authenticate(self, username, password):
         """ Attempts to authenticate the scraper using username and password
         """
         return False
 
     @abstractmethod
-    def class_data(self):
+    def scrape_data(self):
         """ Returns a list of ClassData objects
         """
         return []
