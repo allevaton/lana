@@ -11,13 +11,16 @@ from getpass import getpass
 
 
 class BaseScraper():
-    name = ''
+    name = 'Unidentified Scraper'
+    simple = ''
+
+    _is_auth = False
 
     @abstractmethod
     def __str__(self):
         """ Returns the name of the scraper
         """
-        return 'Undefined Scraper'
+        return self.name
 
     @abstractmethod
     def connect(self):
@@ -39,6 +42,6 @@ class BaseScraper():
 
     @abstractmethod
     def scrape_data(self):
-        """ Returns a list of ClassData objects
+        """ TODO design
         """
         return []
