@@ -14,27 +14,6 @@ import requests
 from BaseScraper import BaseScraper
 
 
-def requires_auth(func, failed_message=''):
-    def magic(self, *args, **kwargs):
-        if not self._is_auth:
-            raise PermissionError(failed_message or 'You must be authenticated to do this')
-        else:
-            func(*args, **kwargs)
-
-    return magic
-
-
-def requires_connection(func, failed_message=''):
-    def magic(self, *args, **kwargs):
-        print(func)
-        if not self._session:
-            raise ConnectionError(failed_message or 'You must be connected to do this')
-        else:
-            func(*args, **kwargs)
-
-    return magic
-
-
 class LeopardWebScraper(BaseScraper):
     name = 'Leopard Web Scraper'
     simple = 'wit'
@@ -76,14 +55,12 @@ class LeopardWebScraper(BaseScraper):
         self._session = requests.Session()
         return True
 
-    @requires_connection
     def authenticate(self, username='', password=''):
         # WIT makes this complicated and requires that a specific identifier is sent along.
         # This identifier is uniquely generated per request and lives in the login page.
         # We need to scrape this out, along with other possible information, before we can post.
         # if not self._session:
         #     raise ConnectionError('You must be connected to authenticate')
-
         name = ' for ' + self.name if self.name else ''
         if not username:
             username = input('Enter username' + name + ': ')
@@ -114,8 +91,6 @@ class LeopardWebScraper(BaseScraper):
         self._is_auth = True
         return True
 
-    @requires_connection
-    @requires_auth
     def scrape_data(self, outfile_name=''):
         payload = parse.parse_qs(self.get_qs(), keep_blank_values=True)
 
@@ -137,6 +112,8 @@ class LeopardWebScraper(BaseScraper):
             d = self.cleanup_entry(dict(zip(headers, [t.text for t in c.find_all('td', class_='dddefault')])))
             data.append(d)
 
+        data = self.cleanup_data(data)
+
         if outfile_name:
             with open(outfile_name, 'w') as fp:
                 fp.write(json.dumps(data))
@@ -148,6 +125,12 @@ class LeopardWebScraper(BaseScraper):
         class_row['attribute'] = class_row['attribute'].strip()
         return class_row
 
+    def cleanup_data(self, data):
+        for entry in data:
+            del entry['select']
+
+        return data
+
     def __del__(self):
         pass
 
@@ -158,6 +141,5 @@ if __name__ == '__main__':
     # pw = getpass('Enter password: ')
 
     scraper = LeopardWebScraper()
-    scraper.authenticate()
-    # if scraper.connect() and scraper.authenticate(un):
-    #     scraper.scrape_data('wit.json')
+    if scraper.connect() and scraper.authenticate():
+        scraper.scrape_data('wit.json')
