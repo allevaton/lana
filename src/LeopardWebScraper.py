@@ -14,6 +14,27 @@ import requests
 from BaseScraper import BaseScraper
 
 
+def requires_auth(func, failed_message=''):
+    def magic(self, *args, **kwargs):
+        if not self._is_auth:
+            raise PermissionError(failed_message or 'You must be authenticated to do this')
+        else:
+            func(*args, **kwargs)
+
+    return magic
+
+
+def requires_connection(func, failed_message=''):
+    def magic(self, *args, **kwargs):
+        print(func)
+        if not self._session:
+            raise ConnectionError(failed_message or 'You must be connected to do this')
+        else:
+            func(*args, **kwargs)
+
+    return magic
+
+
 class LeopardWebScraper(BaseScraper):
     name = 'Leopard Web Scraper'
     simple = 'wit'
@@ -55,12 +76,13 @@ class LeopardWebScraper(BaseScraper):
         self._session = requests.Session()
         return True
 
+    @requires_connection
     def authenticate(self, username='', password=''):
         # WIT makes this complicated and requires that a specific identifier is sent along.
         # This identifier is uniquely generated per request and lives in the login page.
         # We need to scrape this out, along with other possible information, before we can post.
-        if not self._session:
-            raise ConnectionError('You must be connected to authenticate')
+        # if not self._session:
+        #     raise ConnectionError('You must be connected to authenticate')
 
         name = ' for ' + self.name if self.name else ''
         if not username:
@@ -92,10 +114,9 @@ class LeopardWebScraper(BaseScraper):
         self._is_auth = True
         return True
 
+    @requires_connection
+    @requires_auth
     def scrape_data(self, outfile_name=''):
-        if not self._session:
-            raise ConnectionError('You must be connected to scrape the data')
-
         payload = parse.parse_qs(self.get_qs(), keep_blank_values=True)
 
         response = self._session.post('https://prodweb2.wit.edu/SSBPROD/bwskfcls.P_GetCrse_Advanced',
@@ -133,9 +154,10 @@ class LeopardWebScraper(BaseScraper):
 
 if __name__ == '__main__':
     # run the leopard web scraper
-    un = input('Enter username: ')
+    # un = input('Enter username: ')
     # pw = getpass('Enter password: ')
 
     scraper = LeopardWebScraper()
-    if scraper.connect() and scraper.authenticate(un):
-        scraper.scrape_data('wit.json')
+    scraper.authenticate()
+    # if scraper.connect() and scraper.authenticate(un):
+    #     scraper.scrape_data('wit.json')
