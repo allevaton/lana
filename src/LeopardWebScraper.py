@@ -123,6 +123,7 @@ class LeopardWebScraper(BaseScraper):
     def cleanup_entry(self, class_row):
         class_row['instructor'] = class_row['instructor'].split('(')[0].strip()
         class_row['attribute'] = class_row['attribute'].strip()
+        class_row['title'] = class_row['title'].title()
         return class_row
 
     def cleanup_data(self, data):
