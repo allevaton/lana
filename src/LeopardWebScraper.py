@@ -1,13 +1,10 @@
 #
 #
 #
+
 import json
 import os
 import sys
-
-
-__author__ = 'Nick Allevato'
-
 from getpass import getpass
 from urllib import parse
 
