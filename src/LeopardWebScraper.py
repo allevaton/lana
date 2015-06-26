@@ -5,6 +5,7 @@
 import json
 import os
 import sys
+from collections import defaultdict
 from getpass import getpass
 from urllib import parse
 
@@ -19,6 +20,7 @@ class LeopardWebScraper(BaseScraper):
     simple = 'wit'
 
     _session = None
+    _scraping_term = None
 
     _login_url = 'http://leopardweb.wit.edu'
     _user_agent = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)'
@@ -34,22 +36,45 @@ class LeopardWebScraper(BaseScraper):
 
     _is_auth = False
 
-    def __init__(self):
-        pass
+    def __init__(self, term):
+        self._scraping_term = term
+
+    def generate_qs(self):
+        # need to generate and save the new query string
+        if not self._session:
+            raise ConnectionError('You must be connected to generate a query string')
+
+        payload = {
+            'p_calling_proc': 'P_CrseSearch',
+            'p_term': self._scraping_term
+        }
+
+        response = self._session.post('https://prodweb2.wit.edu/SSBPROD/bwckgens.p_proc_term_date',
+                                      payload, **self._session_post_args)
+        soup = BeautifulSoup(response.text)
+        form = soup.find_all('form')[1]
+
+        data = defaultdict(list)
+        for h in form.find_all('input', type='hidden'):
+            data[h.attrs.get('name')].append(h.attrs.get('value'))
+
+        select = form.find('select', attrs={'name': 'sel_subj'})
+        for option in select.find_all('option'):
+            data['sel_subj'].append(option.attrs.get('value'))
+
+        return parse.urlencode(data)
 
     def get_qs(self):
         """ Gets the magic query string for posting and getting the list of all classes
         """
-        n = self.simple + '.qs'
-        if os.path.exists(n):
-            with open(n) as fp:
+        name = '%s.%s.qs' % (self.simple, self._scraping_term)
+        if os.path.exists(name):
+            with open(name) as fp:
                 return fp.readline()
         else:
-            # need to generate and save the new query string
-            if not self._session:
-                raise ConnectionError('You must be connected to generate a query string')
-
-                # TODO finish the ability to generate a query string
+            qs = self.generate_qs()
+            with open(name, 'w') as fp:
+                return fp.writelines([qs])
 
     def connect(self):
         self._session = requests.Session()
@@ -141,6 +166,6 @@ if __name__ == '__main__':
     # un = input('Enter username: ')
     # pw = getpass('Enter password: ')
 
-    scraper = LeopardWebScraper()
+    scraper = LeopardWebScraper("201601")
     if scraper.connect() and scraper.authenticate():
         scraper.scrape_data('wit.json')
