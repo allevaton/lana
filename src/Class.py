@@ -8,6 +8,7 @@
 from utils import class2json
 
 
+@DeprecationWarning
 class Class():
     """ A class to encapsulate all kinds of class data
     This should be in a global form, so all modules should end up

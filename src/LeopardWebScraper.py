@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import requests
 
 from BaseScraper import BaseScraper
+from utils import validate_response
 
 
 class LeopardWebScraper(BaseScraper):
@@ -51,6 +52,7 @@ class LeopardWebScraper(BaseScraper):
 
         response = self._session.post('https://prodweb2.wit.edu/SSBPROD/bwckgens.p_proc_term_date',
                                       payload, **self._session_post_args)
+        validate_response(response, 'Generating query string failed, could not post to search page')
         soup = BeautifulSoup(response.text)
         form = soup.find_all('form')[1]
 
@@ -93,6 +95,7 @@ class LeopardWebScraper(BaseScraper):
             password = getpass('Enter password' + name + ': ')
 
         response = self._session.get(self._login_url, **self._session_post_args)
+        validate_response(response, 'Could not connect to the leopardweb login, check the URL')
         soup = BeautifulSoup(response.text)
 
         payload = {
@@ -107,6 +110,7 @@ class LeopardWebScraper(BaseScraper):
         bigurl = 'https://cas.wit.edu/cas/login?service=https%3A%2F%2Fprodweb2.wit.edu%3A443%2Fssomanager%2Fc%2FSSB'
         response = self._session.post(bigurl, payload, **self._session_post_args)
         del password
+        validate_response(response, 'Could not authenticate, response 404\'d')
 
         soup = BeautifulSoup(response.text)
         if len(soup.find_all('div', class_='errors')) > 0:
@@ -121,6 +125,7 @@ class LeopardWebScraper(BaseScraper):
 
         response = self._session.post('https://prodweb2.wit.edu/SSBPROD/bwskfcls.P_GetCrse_Advanced',
                                       payload, **self._session_post_args)
+        validate_response(response, 'Scraping failed: could not post to advanced search')
         soup = BeautifulSoup(response.text)
         data = []
         headers = []
