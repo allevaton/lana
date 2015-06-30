@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-import warnings
 from collections import defaultdict
 from getpass import getpass
 from urllib import parse
@@ -14,6 +13,7 @@ from lana.BaseScraper import BaseScraper
 from lana.utils import dict_safe_update, validate_response
 
 requests.packages.urllib3.disable_warnings()
+
 
 class LeopardWebScraper(BaseScraper):
     name = 'Leopard Web Scraper'
@@ -77,11 +77,6 @@ class LeopardWebScraper(BaseScraper):
             qs = self.generate_qs()
             with open(name, 'w') as fp:
                 return fp.writelines([qs])
-
-    def connect(self):
-        warnings.warn('This function is no longer necessary. '
-                      'Connection is now handled in the constructor', DeprecationWarning)
-        return True
 
     def authenticate(self, username='', password=''):
         # WIT makes this complicated and requires that a specific identifier is sent along.

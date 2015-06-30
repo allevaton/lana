@@ -2,16 +2,6 @@
 #
 #
 
-import json
-import warnings
-
-
-def class2json(c, stringify=False):
-    warnings.warn('This method should not be used, '
-                  'we are not using Class objects anymore', DeprecationWarning)
-    d = vars(c)
-    return json.dumps(d) if stringify else d
-
 
 def dict_safe_update(d, new):
     for k, v in new.items():
