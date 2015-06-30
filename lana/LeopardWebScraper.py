@@ -1,58 +1,42 @@
 import json
 import os
+import re
 import sys
 from collections import defaultdict
 from getpass import getpass
 from urllib import parse
-import re
-
-import requests
 
 from bs4 import BeautifulSoup
 
 from lana.BaseScraper import BaseScraper
 from lana.utils import dict_safe_update, validate_response
-
-requests.packages.urllib3.disable_warnings()
+from lana.authenticators.LeopardWebAuthenticator import LeopardWebAuthenticator
 
 
 class LeopardWebScraper(BaseScraper):
     name = 'Leopard Web Scraper'
     simple = 'wit'
 
-    _session = None
     _scraping_term = None
 
     _login_url = 'http://leopardweb.wit.edu'
-    _user_agent = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)'
-                   'Chrome/43.0.2357.125 Safari/537.36')
-    _session_post_args = {
-        'headers': {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': _user_agent
-        },
-        'verify': False,
-        'allow_redirects': True
-    }
-
-    _is_auth = False
 
     def __init__(self, term):
         self._scraping_term = term
-        self._session = requests.Session()
+        self._authenticator = LeopardWebAuthenticator(self._login_url)
 
     def generate_qs(self):
         # need to generate and save the new query string
-        if not self._session:
-            raise ConnectionError('You must be connected to generate a query string')
+        if not self._authenticator.is_auth:
+            raise PermissionError('You must be connected to generate a query string')
 
         payload = {
             'p_calling_proc': 'P_CrseSearch',
             'p_term': self._scraping_term
         }
 
-        response = self._session.post('https://prodweb2.wit.edu/SSBPROD/bwckgens.p_proc_term_date',
-                                      payload, **self._session_post_args)
+        response = self._authenticator.post('https://prodweb2.wit.edu/SSBPROD/bwckgens.p_proc_term_date',
+                                            payload, **self._authenticator.post_args)
         validate_response(response, 'Generating query string failed, could not post to search page')
         soup = BeautifulSoup(response.text)
         form = soup.find_all('form')[1]
@@ -79,52 +63,17 @@ class LeopardWebScraper(BaseScraper):
             with open(name, 'w') as fp:
                 return fp.writelines([qs])
 
-    def authenticate(self, username='', password=''):
-        # WIT makes this complicated and requires that a specific identifier is sent along.
-        # This identifier is uniquely generated per request and lives in the login page.
-        # We need to scrape this out, along with other possible information, before we can post.
-        # if not self._session:
-        #     raise ConnectionError('You must be connected to authenticate')
-        name = ' for ' + self.name if self.name else ''
-        if not username:
-            username = input('Enter username' + name + ': ')
-        if not password:
-            password = getpass('Enter password' + name + ': ')
-
-        response = self._session.get(self._login_url, **self._session_post_args)
-        validate_response(response, 'Could not connect to the leopardweb login, check the URL')
-        soup = BeautifulSoup(response.text)
-
-        payload = {
-            'username': username,
-            'password': password
-        }
-
-        form = soup.find('form', id='fm1')
-        if not form:
-            return True
-
-        for hidden in form.find_all('input', type='hidden'):
-            payload[hidden.attrs['name']] = hidden.attrs['value']
-
-        bigurl = 'https://cas.wit.edu/cas/login?service=https%3A%2F%2Fprodweb2.wit.edu%3A443%2Fssomanager%2Fc%2FSSB'
-        response = self._session.post(bigurl, payload, **self._session_post_args)
-        del password
-        validate_response(response, 'Could not authenticate, response 404\'d')
-
-        soup = BeautifulSoup(response.text)
-        if len(soup.find_all('div', class_='errors')) > 0:
-            print('Authenticating %s failed' % self.name, file=sys.stderr)
-            return False
-
-        self._is_auth = True
-        return True
+    def authenticate(self, username, password):
+        return self._authenticator.authenticate(username, password)
 
     def scrape_data(self, outfile_name=''):
+        if not self._authenticator.is_auth:
+            raise PermissionError('You must be authenticated to scrape the data')
+
         payload = parse.parse_qs(self.get_qs(), keep_blank_values=True)
 
-        response = self._session.post('https://prodweb2.wit.edu/SSBPROD/bwskfcls.P_GetCrse_Advanced',
-                                      payload, **self._session_post_args)
+        response = self._authenticator.post('https://prodweb2.wit.edu/SSBPROD/bwskfcls.P_GetCrse_Advanced',
+                                            payload, **self._authenticator.post_args)
         validate_response(response, 'Scraping failed: could not post to advanced search')
         soup = BeautifulSoup(response.text)
 
@@ -194,14 +143,16 @@ class LeopardWebScraper(BaseScraper):
         return data
 
     def disconnect(self):
-        self._session.close()
+        self._authenticator.close()
 
 
 if __name__ == '__main__':
     # run the leopard web scraper
-    # un = input('Enter username: ')
-    # pw = getpass('Enter password: ')
+    un = input('Enter username: ')
+    pw = getpass('Enter password: ')
 
     scraper = LeopardWebScraper("201601")
-    if scraper.authenticate():
+    if scraper.authenticate(un, pw):
         scraper.scrape_data('wit.json')
+    else:
+        print('Authentication failed', file=sys.stderr)
