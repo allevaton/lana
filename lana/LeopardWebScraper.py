@@ -4,6 +4,7 @@ import sys
 from collections import defaultdict
 from getpass import getpass
 from urllib import parse
+import re
 
 import requests
 
@@ -126,6 +127,9 @@ class LeopardWebScraper(BaseScraper):
                                       payload, **self._session_post_args)
         validate_response(response, 'Scraping failed: could not post to advanced search')
         soup = BeautifulSoup(response.text)
+
+        whitespace_re = re.compile(r'\s+')
+        credit_decimal_re = re.compile(r'([0-9]+)\.0+')
         data = []
         headers = []
         for c in soup.find(class_='datadisplaytable').find_all('tr'):
@@ -138,23 +142,41 @@ class LeopardWebScraper(BaseScraper):
                 continue
 
             # Yes, these are the droids you were looking for.
-            d = self.cleanup_entry(dict(zip(headers, [t.text.strip() for t in c.find_all('td', class_='dddefault')])))
-            data.append(d)
+            row = dict(zip(headers, [t.text.strip() for t in c.find_all('td', class_='dddefault')]))
+
+            instructors = row['instructor'].split(',')
+            instructors = ', '.join([prof.split('(')[0].strip() for prof in instructors])
+            instructors = whitespace_re.sub(' ', instructors)
+            row['instructor'] = instructors
+
+            # TODO support for roman numerals staying capitalized
+            row['title'] = row['title'].title()
+            row['time'] = whitespace_re.sub('', row['time'])
+
+            # only care about the campus when it's not on WIT
+            if row['cmp'] == 'WIT':
+                row.pop('cmp')
+
+            if not row['attribute']:
+                row.pop('attribute')
+
+            # get rid of those pesky decimals on whole-number credit courses
+            if credit_decimal_re.match(row['cred']):
+                row['cred'] = credit_decimal_re.sub(r'\1', row['cred'])
+
+            # don't need to keep track of the remainder, we can easily calculate this by subtracting act from cap
+            # rem = cap - act
+            row.pop('rem')
+
+            data.append(row)
 
         data = self.cleanup_data(data)
 
         if outfile_name:
             with open(outfile_name, 'w') as fp:
-                fp.write(json.dumps(data))
+                fp.write(json.dumps(data, separators=(',', ':')))
 
         return data
-
-    def cleanup_entry(self, class_row):
-        # TODO there may be more instructors split by commas; handle this
-        class_row['instructor'] = class_row['instructor'].split('(')[0].strip()
-        class_row['attribute'] = class_row['attribute'].strip()
-        class_row['title'] = class_row['title'].title()
-        return class_row
 
     def cleanup_data(self, data):
         prev = {}
