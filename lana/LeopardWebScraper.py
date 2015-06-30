@@ -151,7 +151,7 @@ if __name__ == '__main__':
     un = input('Enter username: ')
     pw = getpass('Enter password: ')
 
-    scraper = LeopardWebScraper("201601")
+    scraper = LeopardWebScraper("201610")
     if scraper.authenticate(un, pw):
         scraper.scrape_data('wit.json')
     else:
