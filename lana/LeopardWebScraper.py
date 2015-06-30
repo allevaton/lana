@@ -171,8 +171,8 @@ class LeopardWebScraper(BaseScraper):
 
         return data
 
-    def __del__(self):
-        pass
+    def disconnect(self):
+        self._session.close()
 
 
 if __name__ == '__main__':
