@@ -1,7 +1,3 @@
-#
-#
-#
-
 import json
 import os
 import sys
@@ -9,11 +5,12 @@ from collections import defaultdict
 from getpass import getpass
 from urllib import parse
 
-from bs4 import BeautifulSoup
 import requests
 
+from bs4 import BeautifulSoup
+
 from lana.BaseScraper import BaseScraper
-from lana.utils import validate_response
+from lana.utils import dict_safe_update, validate_response
 
 
 class LeopardWebScraper(BaseScraper):
@@ -139,7 +136,7 @@ class LeopardWebScraper(BaseScraper):
                 continue
 
             # Yes, these are the droids you were looking for.
-            d = self.cleanup_entry(dict(zip(headers, [t.text for t in c.find_all('td', class_='dddefault')])))
+            d = self.cleanup_entry(dict(zip(headers, [t.text.strip() for t in c.find_all('td', class_='dddefault')])))
             data.append(d)
 
         data = self.cleanup_data(data)
@@ -151,14 +148,24 @@ class LeopardWebScraper(BaseScraper):
         return data
 
     def cleanup_entry(self, class_row):
+        # TODO there may be more instructors split by commas; handle this
         class_row['instructor'] = class_row['instructor'].split('(')[0].strip()
         class_row['attribute'] = class_row['attribute'].strip()
         class_row['title'] = class_row['title'].title()
         return class_row
 
     def cleanup_data(self, data):
+        prev = {}
         for entry in data:
             del entry['select']
+
+            # Sometimes, classes have empty entries which means they are an extension of
+            # the previous class. We can easily handle this by discovering an empty class,
+            # and updating it with the previous.
+            if not entry['subj'] and not entry['crse'] and not entry['sec']:
+                dict_safe_update(entry, prev)
+
+            prev = entry
 
         return data
 
