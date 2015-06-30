@@ -1,10 +1,6 @@
-import datetime
-
-from utils import class2json
-
 __author__ = 'Nick'
 
-from Class import Class
+from lana import Class
 
 if __name__ == '__main__':
     c = Class()

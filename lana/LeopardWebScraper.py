@@ -12,8 +12,8 @@ from urllib import parse
 from bs4 import BeautifulSoup
 import requests
 
-from BaseScraper import BaseScraper
-from utils import validate_response
+from lana.BaseScraper import BaseScraper
+from lana.utils import validate_response
 
 
 class LeopardWebScraper(BaseScraper):

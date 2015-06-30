@@ -5,7 +5,7 @@
 #  modules, and should be represented as a global class
 #
 
-from utils import class2json
+from lana.utils import class2json
 
 
 @DeprecationWarning

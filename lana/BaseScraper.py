@@ -1,13 +1,4 @@
-#!/bin/python2
-#
-#   Class Data Scraper
-#
-#   An abstract class that scrapes ClassData objects from a particular source
-#
-#
-
 from abc import abstractmethod
-from getpass import getpass
 
 
 class BaseScraper():
