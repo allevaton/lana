@@ -1,8 +1,3 @@
-# Shareable utilities
-#
-#
-
-
 def dict_safe_update(d, new):
     for k, v in new.items():
         if not d.get(k):
