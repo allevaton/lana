@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 from lana.BaseScraper import BaseScraper
 from lana.utils import dict_safe_update, validate_response
 
+requests.packages.urllib3.disable_warnings()
 
 class LeopardWebScraper(BaseScraper):
     name = 'Leopard Web Scraper'
