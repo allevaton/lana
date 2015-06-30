@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import warnings
 from collections import defaultdict
 from getpass import getpass
 from urllib import parse
@@ -36,6 +37,7 @@ class LeopardWebScraper(BaseScraper):
 
     def __init__(self, term):
         self._scraping_term = term
+        self._session = requests.Session()
 
     def generate_qs(self):
         # need to generate and save the new query string
@@ -76,7 +78,8 @@ class LeopardWebScraper(BaseScraper):
                 return fp.writelines([qs])
 
     def connect(self):
-        self._session = requests.Session()
+        warnings.warn('This function is no longer necessary. '
+                      'Connection is now handled in the constructor', DeprecationWarning)
         return True
 
     def authenticate(self, username='', password=''):
@@ -179,5 +182,5 @@ if __name__ == '__main__':
     # pw = getpass('Enter password: ')
 
     scraper = LeopardWebScraper("201601")
-    if scraper.connect() and scraper.authenticate():
+    if scraper.authenticate():
         scraper.scrape_data('wit.json')
