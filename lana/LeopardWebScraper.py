@@ -104,6 +104,9 @@ class LeopardWebScraper(BaseScraper):
         }
 
         form = soup.find('form', id='fm1')
+        if not form:
+            return True
+
         for hidden in form.find_all('input', type='hidden'):
             payload[hidden.attrs['name']] = hidden.attrs['value']
 
