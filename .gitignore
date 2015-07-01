@@ -6,3 +6,4 @@
 src/output.*
 *.db
 src/TODO
+venv/
