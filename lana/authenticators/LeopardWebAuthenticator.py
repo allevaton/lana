@@ -5,6 +5,21 @@ from lana.utils import validate_response
 
 
 class LeopardWebAuthenticator(BaseAuthenticator):
+    """ Gets a valid open session to LeopardWeb, Wentworth's student portal.
+    This can be used anywhere else a session may be needed for scraping.
+
+    This class doesn't expose __enter__ and __exit__ methods because this class
+    is designed to be stored and interacted with from another class or functions.
+    It does not do anything on its own, other than open a session.
+
+    Usage:
+    Simply initialize a new instance of the class with a given URL and call the
+    "authenticate" method
+    >>> auth = LeopardWebAuthenticator('http://leopardweb.wit.edu/')
+    >>> if auth.authenticate('username', 'password'):
+    ...     pass
+
+    """
     _user_agent = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)'
                    'Chrome/43.0.2357.125 Safari/537.36')
     _session_post_args = {
@@ -20,6 +35,14 @@ class LeopardWebAuthenticator(BaseAuthenticator):
         super().__init__(url)
 
     def authenticate(self, username, password, addheaders=None, **kwargs):
+        """ Try to authenticate with the given credentials and parameters.
+        :param username: A username (required). Raises ValueError is not specified
+        :param password: A user's specific password (required). Raises ValueError is not specified
+        :param addheaders: Additional headers that you want passed along.
+        :param kwargs: Any additional kwargs will be posted along
+        :return: True if authentication is successful, False if failed. Does not raise an exception if
+                 failed.
+        """
         if not username:
             raise ValueError('A username must be supplied to authenticate')
 
@@ -66,4 +89,7 @@ class LeopardWebAuthenticator(BaseAuthenticator):
 
     @property
     def post_args(self):
+        """
+        :return: A list of cached arguments passed with session interaction (post, get, etc.)
+        """
         return self._session_post_args

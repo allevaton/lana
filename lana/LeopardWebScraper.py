@@ -3,11 +3,9 @@ import os
 import re
 import sys
 from collections import defaultdict
-from getpass import getpass
 from urllib import parse
 
 from bs4 import BeautifulSoup
-
 from lana.BaseScraper import BaseScraper
 from lana.utils import dict_safe_update, validate_response
 from lana.authenticators.LeopardWebAuthenticator import LeopardWebAuthenticator
@@ -26,7 +24,10 @@ class LeopardWebScraper(BaseScraper):
         self._authenticator = LeopardWebAuthenticator(self._login_url)
 
     def generate_qs(self):
-        # need to generate and save the new query string
+        """ Generates a query string (qs) object and returns the urlencoded string
+        :rtype: str
+        :return: A urlencoded string representing the query string required to post
+        """
         if not self._authenticator.is_auth:
             raise PermissionError('You must be connected to generate a query string')
 
@@ -53,6 +54,7 @@ class LeopardWebScraper(BaseScraper):
 
     def get_qs(self):
         """ Gets the magic query string for posting and getting the list of all classes
+        :rtype: str
         """
         name = '%s.%s.qs' % (self.simple, self._scraping_term)
         if os.path.exists(name):
@@ -64,9 +66,18 @@ class LeopardWebScraper(BaseScraper):
                 return fp.writelines([qs])
 
     def authenticate(self, username, password):
+        """ Validates your credentials using a LeopardWebAuthenticator
+        :param username: Your username (required)
+        :param password:  Your password (required)
+        :rtype: bool
+        """
         return self._authenticator.authenticate(username, password)
 
     def scrape_data(self, outfile_name=''):
+        """ Scrapes the massive list of classes after posting the magic query string.
+        :param outfile_name: An output file to save the results to. If no file is specified, simply returns data.
+        :return: A strict large JSON string. Still return the string if outfile_name is specified
+        """
         if not self._authenticator.is_auth:
             raise PermissionError('You must be authenticated to scrape the data')
 
@@ -128,6 +139,7 @@ class LeopardWebScraper(BaseScraper):
         return data
 
     def cleanup_data(self, data):
+        # TODO implement the functionality of this method in the scrape_data method
         prev = {}
         for entry in data:
             del entry['select']
@@ -143,6 +155,8 @@ class LeopardWebScraper(BaseScraper):
         return data
 
     def disconnect(self):
+        """ Close the authenticator and clean up
+        """
         self._authenticator.close()
 
 
